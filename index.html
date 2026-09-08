@@ -1,0 +1,3464 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#090909">
+
+  <!-- =========================================================
+       RIDELAB
+       App Version: 0.2.2
+       Database Version: 1
+       Release Status: ALPHA
+       Base Version: Foundation
+       Build: 2026-09-08
+
+       ZWECK DIESER VERSION
+       --------------------
+       RideLab 0.2.2 ist die Design- und Systembasis.
+       Enthalten sind:
+       - Responsive App Shell
+       - Dark / Bright Mode
+       - Desktop- und Mobile-Navigation
+       - Demo-Home
+       - "RideLab verstehen"
+       - Grundlegendes Komponentensystem
+       - QA-/Systembereich
+
+       NOCH NICHT ENTHALTEN
+       --------------------
+       - echter FIT-Datei-Import
+       - echte Trainingsanalyse
+       - Karten
+       - persistente Ride-Daten
+       - Trainingsalgorithmus
+
+       NEU IN 0.2.2
+       --------------------
+       - vollständiges Native-Onboarding-Redesign
+       - screenweise Führung mit einer Hauptaufgabe je Schritt
+       - Mehrfachauswahl für Trainingsarten und Trainingsziele
+       - separates Primärziel
+       - iPhone-first Bottom Action Area
+       - reduzierte, app-native Choice Rows
+       - kompaktere Desktop-Komposition
+       - bestehendes Profilmodell und lokale Speicherung bleiben erhalten
+
+       CHANGELOG 0.2.1
+       --------------------
+       ADDED
+       - Foundation Layout
+       - Design Tokens
+       - Theme Engine
+       - Responsive Navigation
+       - Demo Dashboard
+       - Knowledge Page
+       - QA Panel
+
+       UNCHANGED
+       - Nicht anwendbar: erste Version
+
+       KNOWN LIMITATIONS
+       - Demo-Daten sind ausdrücklich als Demo gekennzeichnet.
+       - FIT Import folgt in Version 0.2.1.
+  ========================================================= -->
+
+  <title>RideLab 0.2.2 Alpha</title>
+
+  <script>
+    /*
+      THEME BOOTSTRAP
+      ---------------
+      Diese kleine Routine läuft bewusst sehr früh.
+      Dadurch wird verhindert, dass beim Laden kurz das falsche Theme sichtbar ist.
+    */
+    (function () {
+      const savedTheme = localStorage.getItem('ridelab.theme');
+      const systemPrefersBright = window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: light)').matches;
+
+      const theme = savedTheme === 'bright' || savedTheme === 'dark'
+        ? savedTheme
+        : (systemPrefersBright ? 'bright' : 'dark');
+
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <style>
+    /* =========================================================
+       01 — DESIGN TOKENS
+       Alle zentralen Designwerte liegen hier.
+       Dadurch müssen Farben, Abstände und Radien nicht an vielen
+       Stellen einzeln verändert werden.
+    ========================================================= */
+
+    :root {
+      --accent-lime: #D7FF38;
+      --accent-red: #FF4B38;
+      --accent-yellow: #FFD84A;
+      --accent-blue: #4D8DFF;
+      --accent-green: #8BD7A1;
+
+      --zone-z1: #B9C5CC;
+      --zone-z2: #4D8DFF;
+      --zone-z3: #8BD7A1;
+      --zone-ss: #FFD84A;
+      --zone-z4: #FF934D;
+      --zone-z5: #FF4B38;
+      --zone-z6: #DA66E8;
+      --zone-z7: #8E74FF;
+
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+
+      --radius-s: 8px;
+      --radius-m: 14px;
+      --radius-l: 20px;
+      --radius-xl: 28px;
+
+      --font-display: clamp(2.7rem, 7vw, 6.2rem);
+      --font-h1: clamp(2rem, 5vw, 3.8rem);
+      --font-h2: clamp(1.55rem, 3vw, 2.4rem);
+      --font-h3: clamp(1.15rem, 2vw, 1.55rem);
+      --font-kpi-xl: clamp(3.2rem, 8vw, 7rem);
+      --font-kpi: clamp(2.35rem, 5.3vw, 4.7rem);
+      --font-body: clamp(1rem, 1.15vw, 1.1rem);
+
+      --transition-fast: 180ms cubic-bezier(.2,.8,.2,1);
+      --transition-medium: 260ms cubic-bezier(.2,.8,.2,1);
+      --transition-slow: 420ms cubic-bezier(.2,.8,.2,1);
+
+      --control-height: 58px;
+      --control-radius: 18px;
+      --control-border: 1px solid var(--line-subtle);
+
+      --sidebar-width: 218px;
+      --content-max: 1600px;
+      --reading-max: 760px;
+    }
+
+    html[data-theme="dark"] {
+      --bg-page: #090909;
+      --bg-surface: #111111;
+      --bg-raised: #181818;
+      --bg-soft: #202020;
+      --bg-elevated: #242424;
+
+      --text-main: #F5F4EF;
+      --text-soft: #B5B3AC;
+      --text-muted: #76746F;
+
+      --line-subtle: rgba(255,255,255,.10);
+      --line-medium: rgba(255,255,255,.18);
+      --shadow: 0 18px 54px rgba(0,0,0,.28);
+
+      --map-line: #D7FF38;
+    }
+
+    html[data-theme="bright"] {
+      --bg-page: #F2F0E8;
+      --bg-surface: #FAF9F4;
+      --bg-raised: #FFFFFF;
+      --bg-soft: #E9E6DD;
+      --bg-elevated: #FFFFFF;
+
+      --text-main: #111111;
+      --text-soft: #53514D;
+      --text-muted: #85817A;
+
+      --line-subtle: rgba(0,0,0,.10);
+      --line-medium: rgba(0,0,0,.18);
+      --shadow: 0 18px 54px rgba(57,49,28,.11);
+
+      --map-line: #111111;
+    }
+
+    /* =========================================================
+       02 — GLOBAL / RESET
+    ========================================================= */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 0;
+      background: var(--bg-page);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 86% 10%, color-mix(in srgb, var(--accent-lime) 7%, transparent), transparent 28rem),
+        var(--bg-page);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: var(--font-body);
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      transition: background var(--transition-medium), color var(--transition-medium);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent-lime);
+      outline-offset: 3px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img, svg {
+      max-width: 100%;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* =========================================================
+       03 — APP SHELL
+    ========================================================= */
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 28px 18px;
+      border-right: 1px solid var(--line-subtle);
+      background: color-mix(in srgb, var(--bg-page) 90%, transparent);
+      backdrop-filter: blur(18px);
+      z-index: 40;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 8px 30px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -.04em;
+    }
+
+    .brand-mark {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--accent-lime);
+      transform: rotate(16deg);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent-lime) 12%, transparent);
+    }
+
+    .nav-stack {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-button {
+      width: 100%;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 0;
+      border-radius: var(--radius-m);
+      padding: 0 13px;
+      background: transparent;
+      color: var(--text-soft);
+      text-align: left;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .nav-button:hover {
+      background: var(--bg-soft);
+      color: var(--text-main);
+    }
+
+    .nav-button[aria-current="page"] {
+      background: var(--accent-lime);
+      color: #111111;
+      font-weight: 750;
+    }
+
+    .nav-icon {
+      width: 22px;
+      flex: 0 0 22px;
+      text-align: center;
+      font-size: .88rem;
+      font-weight: 800;
+      letter-spacing: -.04em;
+    }
+
+    .sidebar-bottom {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 22px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .version-chip {
+      padding: 10px 12px;
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-m);
+      color: var(--text-muted);
+      font-size: .78rem;
+      line-height: 1.3;
+    }
+
+    .main-shell {
+      min-width: 0;
+      padding-bottom: 40px;
+    }
+
+    .topbar {
+      min-width: 0;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px clamp(18px, 4vw, 56px);
+      border-bottom: 1px solid var(--line-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: color-mix(in srgb, var(--bg-page) 88%, transparent);
+      backdrop-filter: blur(18px);
+    }
+
+    .page-kicker {
+      color: var(--text-muted);
+      font-size: .75rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-weight: 750;
+    }
+
+    .page-title {
+      margin: 2px 0 0;
+      font-size: clamp(1.35rem, 2vw, 1.75rem);
+      line-height: 1.05;
+      letter-spacing: -.045em;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .theme-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 4px;
+      border: 1px solid var(--line-subtle);
+      border-radius: 999px;
+      background: var(--bg-surface);
+    }
+
+    .theme-button {
+      min-width: 48px;
+      min-height: 38px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    .theme-button.is-active {
+      background: var(--text-main);
+      color: var(--bg-page);
+    }
+
+    .content {
+      width: min(100%, var(--content-max));
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 56px);
+      min-width: 0;
+    }
+
+    .view {
+      display: none;
+      min-width: 0;
+    }
+
+    .view.is-active {
+      display: block;
+      animation: viewIn 240ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    @keyframes viewIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================================
+       04 — SHARED COMPONENTS
+    ========================================================= */
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: .73rem;
+      letter-spacing: .16em;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-chip {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: .72rem;
+      letter-spacing: .09em;
+      font-weight: 850;
+      text-transform: uppercase;
+      border: 1px solid var(--line-subtle);
+      background: var(--bg-surface);
+    }
+
+    .status-chip.demo {
+      color: #111;
+      background: var(--accent-yellow);
+      border-color: transparent;
+    }
+
+    .status-chip.good {
+      color: #102213;
+      background: var(--accent-green);
+      border-color: transparent;
+    }
+
+    .status-chip.alpha {
+      color: #111;
+      background: var(--accent-lime);
+      border-color: transparent;
+    }
+
+    .section {
+      margin-top: clamp(46px, 7vw, 96px);
+      min-width: 0;
+    }
+
+    .section:first-child {
+      margin-top: 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      margin: 6px 0 0;
+      font-size: var(--font-h2);
+      line-height: .98;
+      letter-spacing: -.055em;
+    }
+
+    .section-note {
+      max-width: 540px;
+      margin: 0;
+      color: var(--text-soft);
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-l);
+      background: var(--bg-surface);
+      box-shadow: 0 1px 0 color-mix(in srgb, var(--text-main) 3%, transparent);
+      overflow: hidden;
+    }
+
+    .card-pad {
+      padding: clamp(20px, 3vw, 32px);
+    }
+
+    .card:hover {
+      border-color: var(--line-medium);
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+      font-size: .75rem;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 8px;
+      font-size: var(--font-kpi);
+      line-height: .88;
+      letter-spacing: -.065em;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .metric-unit {
+      margin-left: .12em;
+      font-size: .3em;
+      letter-spacing: -.02em;
+      font-weight: 720;
+      color: var(--text-soft);
+    }
+
+    .metric-caption {
+      margin-top: 15px;
+      color: var(--text-soft);
+      max-width: 38ch;
+    }
+
+    .grid-auto {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border-radius: 16px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      font-weight: 820;
+      letter-spacing: -.01em;
+      cursor: pointer;
+      transition:
+        transform var(--transition-fast),
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        box-shadow var(--transition-fast);
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button.primary {
+      background: var(--accent-lime);
+      color: #111;
+    }
+
+    .button.secondary {
+      background: var(--bg-raised);
+      border-color: var(--line-subtle);
+    }
+
+    .button.ghost {
+      background: transparent;
+      border-color: var(--line-subtle);
+    }
+
+    /* =========================================================
+       05 — HOME / HERO
+    ========================================================= */
+
+    .hero {
+      min-height: clamp(460px, 65vh, 710px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, .7fr);
+      align-items: end;
+      gap: clamp(28px, 5vw, 80px);
+      padding: clamp(28px, 5vw, 72px);
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(125deg,
+          color-mix(in srgb, var(--bg-raised) 96%, transparent) 0 54%,
+          color-mix(in srgb, var(--accent-lime) 10%, var(--bg-surface)) 54% 100%);
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -7%;
+      top: 12%;
+      width: min(34vw, 430px);
+      aspect-ratio: 1;
+      border: 1px solid color-mix(in srgb, var(--accent-lime) 45%, transparent);
+      border-radius: 50%;
+      opacity: .6;
+    }
+
+    .hero-copy {
+      min-width: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-day {
+      margin: 18px 0 0;
+      font-size: var(--font-display);
+      line-height: .82;
+      letter-spacing: -.08em;
+      text-transform: uppercase;
+      max-width: 8ch;
+    }
+
+    .hero-plan {
+      margin-top: 28px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero-plan strong {
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      letter-spacing: -.045em;
+    }
+
+    .hero-plan span {
+      color: var(--text-soft);
+    }
+
+    .hero-side {
+      position: relative;
+      z-index: 2;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 22px;
+      min-width: 0;
+    }
+
+    .hero-kpi .metric-value {
+      font-size: var(--font-kpi-xl);
+    }
+
+    .hero-message {
+      padding-top: 18px;
+      border-top: 1px solid var(--line-subtle);
+      font-size: clamp(1.08rem, 1.8vw, 1.4rem);
+      line-height: 1.28;
+      letter-spacing: -.03em;
+      max-width: 28ch;
+    }
+
+    .week-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0,1fr));
+      gap: 8px;
+    }
+
+    .day-tile {
+      min-width: 0;
+      padding: 12px 8px;
+      border-radius: var(--radius-m);
+      border: 1px solid var(--line-subtle);
+      background: var(--bg-surface);
+      text-align: center;
+    }
+
+    .day-tile strong {
+      display: block;
+      font-size: .78rem;
+    }
+
+    .day-tile span {
+      display: block;
+      margin-top: 8px;
+      font-size: .72rem;
+      color: var(--text-muted);
+      overflow-wrap: anywhere;
+    }
+
+    .day-tile.today {
+      background: var(--accent-lime);
+      color: #111;
+      border-color: transparent;
+    }
+
+    .day-tile.today span {
+      color: #111;
+      opacity: .72;
+    }
+
+    .insight {
+      display: grid;
+      grid-template-columns: auto minmax(0,1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .insight-index {
+      font-size: clamp(2.4rem, 5vw, 4.5rem);
+      line-height: .85;
+      letter-spacing: -.06em;
+      color: var(--accent-lime);
+      font-weight: 850;
+    }
+
+    .insight h3 {
+      margin: 0;
+      font-size: var(--font-h3);
+      letter-spacing: -.04em;
+    }
+
+    .insight p {
+      margin: 8px 0 0;
+      color: var(--text-soft);
+      max-width: 60ch;
+    }
+
+    /* =========================================================
+       06 — KNOWLEDGE / RIDELAB VERSTEHEN
+    ========================================================= */
+
+    .editorial-intro {
+      max-width: 1050px;
+      padding: clamp(18px, 3vw, 36px) 0 clamp(36px, 6vw, 84px);
+    }
+
+    .editorial-title {
+      margin: 16px 0 0;
+      max-width: 10ch;
+      font-size: var(--font-display);
+      line-height: .84;
+      letter-spacing: -.08em;
+    }
+
+    .editorial-lead {
+      max-width: var(--reading-max);
+      margin: 28px 0 0;
+      font-size: clamp(1.15rem, 2vw, 1.55rem);
+      color: var(--text-soft);
+      line-height: 1.35;
+      letter-spacing: -.025em;
+    }
+
+    .knowledge-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .knowledge-card {
+      grid-column: span 4;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(22px, 3vw, 32px);
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-l);
+      background: var(--bg-surface);
+    }
+
+    .knowledge-card.wide {
+      grid-column: span 8;
+    }
+
+    .knowledge-number {
+      font-size: 3.4rem;
+      line-height: .9;
+      letter-spacing: -.07em;
+      font-weight: 850;
+      color: var(--accent-lime);
+    }
+
+    .knowledge-card h3 {
+      margin: 28px 0 8px;
+      font-size: 1.3rem;
+      letter-spacing: -.035em;
+    }
+
+    .knowledge-card p {
+      margin: 0;
+      color: var(--text-soft);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-l);
+      overflow: hidden;
+    }
+
+    .flow-step {
+      min-width: 0;
+      min-height: 126px;
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--line-subtle);
+      background: var(--bg-surface);
+    }
+
+    .flow-step:last-child {
+      border-right: 0;
+    }
+
+    .flow-step span {
+      color: var(--text-muted);
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .11em;
+    }
+
+    .flow-step strong {
+      font-size: .86rem;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .data-origin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .origin-card {
+      padding: 26px;
+      border-radius: var(--radius-l);
+      border: 1px solid var(--line-subtle);
+      background: var(--bg-surface);
+      min-width: 0;
+    }
+
+    .origin-card h3 {
+      margin: 10px 0;
+      font-size: 1.35rem;
+      letter-spacing: -.04em;
+    }
+
+    .origin-card p {
+      color: var(--text-soft);
+      margin: 0;
+    }
+
+    /* =========================================================
+       07 — MORE / SYSTEM / QA
+    ========================================================= */
+
+    .system-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+      gap: 14px;
+    }
+
+    .system-card {
+      padding: 22px;
+      border: 1px solid var(--line-subtle);
+      border-radius: var(--radius-l);
+      background: var(--bg-surface);
+      min-width: 0;
+    }
+
+    .system-card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.5rem;
+      letter-spacing: -.04em;
+      overflow-wrap: anywhere;
+    }
+
+    .qa-table {
+      margin-top: 18px;
+      border-top: 1px solid var(--line-subtle);
+    }
+
+    .qa-row {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 16px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line-subtle);
+      align-items: center;
+    }
+
+    .qa-result {
+      font-size: .74rem;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .qa-result.pass {
+      color: var(--accent-green);
+    }
+
+    .qa-result.fail {
+      color: var(--accent-red);
+    }
+
+    /* =========================================================
+       08 — PLACEHOLDER VIEWS
+    ========================================================= */
+
+    .placeholder {
+      min-height: 60vh;
+      display: grid;
+      align-content: center;
+      justify-items: start;
+      max-width: 900px;
+    }
+
+    .placeholder h2 {
+      margin: 12px 0 18px;
+      font-size: var(--font-h1);
+      line-height: .92;
+      letter-spacing: -.065em;
+    }
+
+    .placeholder p {
+      margin: 0;
+      max-width: 60ch;
+      color: var(--text-soft);
+      font-size: 1.1rem;
+    }
+
+
+    /* =========================================================
+       09 — ONBOARDING & ATHLETE PROFILE
+       Native Redesign 0.2.2
+
+       LEITGEDANKE
+       ----------
+       Auf dem iPhone verhält sich das Setup wie eine native App:
+       - ein Thema pro Screen
+       - große, ruhige Typografie
+       - wenige sichtbare Controls
+       - Bottom Action Area im Daumenbereich
+       - Mehrfachauswahl als klare Choice Rows
+       - keine "Formularwand"
+    ========================================================= */
+
+    .onboarding-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      display: none;
+      overflow: hidden;
+      background: var(--bg-page);
+    }
+
+    .onboarding-overlay.is-open {
+      display: block;
+    }
+
+    .onboarding-shell {
+      width: 100%;
+      height: 100dvh;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      background: var(--bg-page);
+      overflow: hidden;
+    }
+
+    .onboarding-header {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      min-height: 68px;
+      padding:
+        max(14px, env(safe-area-inset-top))
+        clamp(16px, 4vw, 28px)
+        12px;
+      border-bottom: 1px solid var(--line-subtle);
+      background: color-mix(in srgb, var(--bg-page) 94%, transparent);
+      backdrop-filter: blur(18px);
+      z-index: 3;
+    }
+
+    .onboarding-back-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .onboarding-back-icon:hover {
+      background: var(--bg-soft);
+    }
+
+    .onboarding-back-icon:active {
+      transform: scale(.96);
+    }
+
+    .onboarding-back-icon.is-hidden {
+      visibility: hidden;
+    }
+
+    .onboarding-progress {
+      min-width: 0;
+      display: grid;
+      gap: 7px;
+    }
+
+    .progress-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .progress-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-soft);
+      font-size: .72rem;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .progress-percent {
+      color: var(--text-muted);
+      font-size: .72rem;
+      font-weight: 800;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--text-main) 8%, transparent);
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent-lime);
+      transition: width var(--transition-slow);
+    }
+
+    .onboarding-close {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.15rem;
+    }
+
+    .onboarding-close:hover {
+      color: var(--text-main);
+      background: var(--bg-soft);
+    }
+
+    .onboarding-body {
+      min-width: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 0;
+      scroll-behavior: smooth;
+    }
+
+    .onboarding-step {
+      display: none;
+      width: min(100%, 760px);
+      min-height: 100%;
+      margin: 0 auto;
+      padding:
+        clamp(34px, 7vw, 76px)
+        clamp(20px, 6vw, 52px)
+        clamp(30px, 6vw, 58px);
+      align-content: start;
+    }
+
+    .onboarding-step.is-active {
+      display: grid;
+      animation: nativeStepIn 260ms cubic-bezier(.2,.8,.2,1);
+    }
+
+    @keyframes nativeStepIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-kicker {
+      color: var(--text-muted);
+      font-size: .75rem;
+      font-weight: 850;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .onboarding-step h2 {
+      margin: 14px 0 16px;
+      max-width: 11ch;
+      font-size: clamp(2.8rem, 10vw, 5.2rem);
+      line-height: .9;
+      letter-spacing: -.075em;
+      text-wrap: balance;
+    }
+
+    .onboarding-step > p {
+      max-width: 58ch;
+      margin: 0 0 clamp(28px, 5vw, 42px);
+      color: var(--text-soft);
+      font-size: clamp(1rem, 2.4vw, 1.22rem);
+      line-height: 1.45;
+      letter-spacing: -.018em;
+    }
+
+    .single-value-wrap {
+      display: grid;
+      gap: 12px;
+      width: min(100%, 420px);
+      margin-top: 10px;
+    }
+
+    .single-value-label {
+      color: var(--text-muted);
+      font-size: .72rem;
+      font-weight: 850;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .single-value-input {
+      width: 100%;
+      min-height: 84px;
+      padding: 0 20px;
+      border: 0;
+      border-bottom: 2px solid var(--line-medium);
+      background: transparent;
+      color: var(--text-main);
+      outline: none;
+      font-size: clamp(2.5rem, 12vw, 5rem);
+      font-weight: 850;
+      letter-spacing: -.06em;
+      text-align: left;
+    }
+
+    .single-value-input:focus {
+      border-bottom-color: var(--accent-lime);
+    }
+
+    .single-value-unit {
+      color: var(--text-muted);
+      font-size: .95rem;
+      margin-top: -2px;
+    }
+
+    .pair-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      width: 100%;
+    }
+
+    .value-card {
+      min-width: 0;
+      border: 1px solid var(--line-subtle);
+      border-radius: 22px;
+      background: var(--bg-surface);
+      padding: 18px;
+    }
+
+    .value-card label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--text-muted);
+      font-size: .72rem;
+      font-weight: 850;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .value-card input,
+    .value-card select {
+      width: 100%;
+      min-width: 0;
+      min-height: 56px;
+      padding: 0;
+      border: 0;
+      border-bottom: 1px solid var(--line-medium);
+      border-radius: 0;
+      background: transparent;
+      color: var(--text-main);
+      outline: none;
+      font-size: clamp(1.5rem, 5vw, 2.3rem);
+      font-weight: 800;
+      letter-spacing: -.04em;
+    }
+
+    .value-card select {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .value-card input:focus,
+    .value-card select:focus {
+      border-bottom-color: var(--accent-lime);
+    }
+
+    .value-card small {
+      display: block;
+      margin-top: 10px;
+      color: var(--text-muted);
+      font-size: .82rem;
+      line-height: 1.35;
+    }
+
+    .choice-list {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .choice-row {
+      min-width: 0;
+      min-height: 68px;
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px 14px 18px;
+      border: 1px solid var(--line-subtle);
+      border-radius: 18px;
+      background: var(--bg-surface);
+      cursor: pointer;
+      transition:
+        transform var(--transition-fast),
+        border-color var(--transition-fast),
+        background var(--transition-fast);
+    }
+
+    .choice-row:hover {
+      border-color: var(--line-medium);
+    }
+
+    .choice-row:active {
+      transform: scale(.995);
+    }
+
+    .choice-row:has(input:checked) {
+      border-color: color-mix(in srgb, var(--accent-lime) 68%, var(--text-main));
+      background:
+        linear-gradient(90deg,
+          color-mix(in srgb, var(--accent-lime) 8%, var(--bg-surface)),
+          var(--bg-surface));
+    }
+
+    .choice-copy {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .choice-title {
+      min-width: 0;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      overflow-wrap: anywhere;
+    }
+
+    .choice-subtitle {
+      color: var(--text-muted);
+      font-size: .86rem;
+      line-height: 1.35;
+    }
+
+    .choice-row input {
+      appearance: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      border: 1px solid var(--line-medium);
+      background: var(--bg-page);
+      display: grid;
+      place-items: center;
+      margin: 0;
+      transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        transform var(--transition-fast);
+    }
+
+    .choice-row input[type="radio"] {
+      border-radius: 50%;
+    }
+
+    .choice-row input:checked {
+      background: var(--accent-lime);
+      border-color: var(--accent-lime);
+    }
+
+    .choice-row input[type="checkbox"]:checked::after {
+      content: "✓";
+      color: #111;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .choice-row input[type="radio"]:checked::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #111;
+    }
+
+    .choice-row.compact {
+      min-height: 60px;
+    }
+
+    .helper-card {
+      margin-top: 24px;
+      padding: 18px;
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--accent-lime) 5%, var(--bg-surface));
+      border: 1px solid var(--line-subtle);
+      color: var(--text-soft);
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+
+    .summary-card {
+      display: grid;
+      gap: 18px;
+      padding: 20px;
+      border: 1px solid var(--line-subtle);
+      border-radius: 22px;
+      background: var(--bg-surface);
+    }
+
+    .summary-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 18px;
+      align-items: baseline;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+
+    .summary-row:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .summary-row span:first-child {
+      color: var(--text-muted);
+    }
+
+    .summary-row span:last-child {
+      text-align: right;
+      font-weight: 780;
+      overflow-wrap: anywhere;
+    }
+
+    .onboarding-footer {
+      z-index: 4;
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 78px;
+      padding:
+        12px
+        clamp(16px, 4vw, 28px)
+        max(12px, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line-subtle);
+      background: color-mix(in srgb, var(--bg-page) 94%, transparent);
+      backdrop-filter: blur(18px);
+    }
+
+    .onboarding-secondary-action {
+      justify-self: start;
+      min-height: 48px;
+      padding: 0 12px;
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .onboarding-secondary-action:hover {
+      color: var(--text-main);
+    }
+
+    .onboarding-primary-action {
+      min-width: 132px;
+      min-height: 54px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 17px;
+      background: var(--accent-lime);
+      color: #111;
+      font-weight: 900;
+      letter-spacing: -.02em;
+      cursor: pointer;
+      box-shadow:
+        0 10px 28px color-mix(in srgb, var(--accent-lime) 16%, transparent),
+        inset 0 1px 0 rgba(255,255,255,.45);
+      transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast);
+    }
+
+    .onboarding-primary-action:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 14px 32px color-mix(in srgb, var(--accent-lime) 22%, transparent),
+        inset 0 1px 0 rgba(255,255,255,.45);
+    }
+
+    .onboarding-primary-action:active {
+      transform: scale(.985);
+    }
+
+    /* Profil */
+    .profile-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, .7fr) minmax(0, 1.3fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .profile-ring-card {
+      min-height: 440px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 35%,
+          color-mix(in srgb, var(--accent-lime) 8%, transparent),
+          transparent 18rem),
+        var(--bg-surface);
+    }
+
+    .profile-ring {
+      --profile-progress: 0;
+      width: min(72vw, 258px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(
+          var(--accent-lime) calc(var(--profile-progress) * 1%),
+          color-mix(in srgb, var(--text-main) 8%, transparent) 0);
+      position: relative;
+      box-shadow:
+        0 0 0 1px var(--line-subtle),
+        0 24px 70px color-mix(in srgb, var(--accent-lime) 9%, transparent);
+    }
+
+    .profile-ring::before {
+      content: "";
+      position: absolute;
+      width: 79%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid var(--line-subtle);
+    }
+
+    .profile-ring-content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 4px;
+    }
+
+    .profile-ring-value {
+      font-size: clamp(3rem, 6vw, 4.8rem);
+      line-height: .86;
+      letter-spacing: -.07em;
+      font-weight: 900;
+    }
+
+    .profile-ring-label {
+      color: var(--text-muted);
+      font-size: .72rem;
+      font-weight: 850;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .profile-summary {
+      display: grid;
+      gap: 18px;
+    }
+
+    .profile-list {
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line-subtle);
+    }
+
+    .profile-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+      gap: 18px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line-subtle);
+      align-items: baseline;
+    }
+
+    .profile-row span:first-child {
+      color: var(--text-muted);
+      font-size: .92rem;
+    }
+
+    .profile-row span:last-child {
+      text-align: right;
+      font-weight: 780;
+      overflow-wrap: anywhere;
+    }
+
+    .missing-list {
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      color: var(--text-soft);
+    }
+
+    .missing-list li {
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .missing-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .7em;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-yellow);
+    }
+
+    @media (min-width: 900px) {
+      .onboarding-overlay {
+        padding: 30px;
+        background:
+          radial-gradient(circle at 10% 10%,
+            color-mix(in srgb, var(--accent-lime) 8%, transparent),
+            transparent 26rem),
+          var(--bg-page);
+      }
+
+      .onboarding-overlay.is-open {
+        display: grid;
+        place-items: center;
+      }
+
+      .onboarding-shell {
+        width: min(100%, 980px);
+        height: min(880px, calc(100dvh - 60px));
+        border: 1px solid var(--line-subtle);
+        border-radius: 30px;
+        box-shadow: var(--shadow);
+      }
+
+      .onboarding-header {
+        padding-inline: 28px;
+      }
+
+      .onboarding-step {
+        width: min(100%, 760px);
+      }
+
+      .onboarding-footer {
+        padding-inline: 28px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .pair-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .onboarding-step {
+        padding-top: 32px;
+      }
+
+      .onboarding-step h2 {
+        font-size: clamp(2.7rem, 14vw, 4.2rem);
+      }
+
+      .profile-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .profile-row span:last-child {
+        text-align: left;
+      }
+    }
+
+    /* =========================================================
+       09 — MOBILE BOTTOM NAVIGATION
+    ========================================================= */
+
+    .mobile-nav {
+      display: none;
+    }
+
+    /* =========================================================
+       10 — RESPONSIVE RULES
+    ========================================================= */
+
+    @media (max-width: 1023px) {
+      .app-shell {
+        display: block;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .main-shell {
+        padding-bottom: calc(88px + env(safe-area-inset-bottom));
+      }
+
+      .topbar {
+        min-height: 72px;
+        padding-inline: clamp(16px, 4vw, 28px);
+      }
+
+      .content {
+        padding: clamp(20px, 4vw, 32px);
+      }
+
+      .mobile-nav {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        z-index: 50;
+        min-height: 66px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0,1fr));
+        padding: 7px;
+        border-radius: 22px;
+        border: 1px solid var(--line-subtle);
+        background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(22px);
+      }
+
+      .mobile-nav-button {
+        min-width: 0;
+        min-height: 50px;
+        border: 0;
+        border-radius: 16px;
+        background: transparent;
+        color: var(--text-muted);
+        display: grid;
+        place-items: center;
+        gap: 2px;
+        cursor: pointer;
+      }
+
+      .mobile-nav-button[aria-current="page"] {
+        background: var(--accent-lime);
+        color: #111;
+      }
+
+      .mobile-nav-button span:first-child {
+        font-size: .78rem;
+        font-weight: 850;
+      }
+
+      .mobile-nav-button span:last-child {
+        max-width: 100%;
+        font-size: .62rem;
+        font-weight: 800;
+        letter-spacing: .03em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: 620px;
+      }
+
+      .knowledge-card,
+      .knowledge-card.wide {
+        grid-column: span 6;
+      }
+
+      .flow {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .flow-step:nth-child(4) {
+        border-right: 0;
+      }
+
+      .flow-step {
+        border-bottom: 1px solid var(--line-subtle);
+      }
+
+      .flow-step:nth-child(n+5) {
+        border-bottom: 0;
+      }
+
+      .data-origin-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    @media (max-width: 900px) {
+      .profile-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-ring-card {
+        min-height: 340px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .topbar {
+        align-items: center;
+      }
+      .onboarding-shell {
+        border-radius: 24px;
+      }
+
+      .onboarding-overlay {
+        padding: 10px;
+      }
+
+      .choice-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .profile-row span:last-child {
+        text-align: left;
+      }
+
+
+      .onboarding-header {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+
+      .onboarding-progress {
+        max-width: none;
+      }
+
+      .onboarding-body {
+        min-height: auto;
+        padding: 34px 22px 30px;
+      }
+
+      .onboarding-step h2 {
+        font-size: clamp(2.7rem, 12vw, 4.4rem);
+      }
+
+      .onboarding-footer {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 16px;
+      }
+
+      .onboarding-footer .button.ghost {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: stretch;
+      }
+
+      .onboarding-footer .button.secondary {
+        grid-column: 1;
+        grid-row: 2;
+        justify-self: stretch;
+      }
+
+      .onboarding-footer .button.primary {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        justify-self: stretch;
+        min-width: 0;
+      }
+
+      .page-kicker {
+        display: none;
+      }
+
+      .page-title {
+        font-size: 1.22rem;
+      }
+
+      .theme-toggle {
+        transform: scale(.94);
+        transform-origin: right center;
+      }
+
+      .theme-button {
+        min-width: 42px;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      .hero {
+        min-height: 560px;
+        padding: 24px;
+        gap: 28px;
+        border-radius: 22px;
+      }
+
+      .hero-day {
+        max-width: 7ch;
+      }
+
+      .hero::after {
+        width: 280px;
+        right: -36%;
+        top: 6%;
+      }
+
+      .hero-plan {
+        margin-top: 22px;
+      }
+
+      .grid-auto {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header {
+        display: block;
+      }
+
+      .section-note {
+        margin-top: 12px;
+      }
+
+      .week-strip {
+        grid-template-columns: repeat(4, minmax(0,1fr));
+      }
+
+      .day-tile:last-child {
+        grid-column: span 2;
+      }
+
+      .knowledge-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .knowledge-card,
+      .knowledge-card.wide {
+        grid-column: 1;
+        min-height: 220px;
+      }
+
+      .flow {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .flow-step,
+      .flow-step:nth-child(4),
+      .flow-step:nth-child(n+5) {
+        border-right: 1px solid var(--line-subtle);
+        border-bottom: 1px solid var(--line-subtle);
+      }
+
+      .flow-step:nth-child(even) {
+        border-right: 0;
+      }
+
+      .flow-step:nth-last-child(-n+2) {
+        border-bottom: 0;
+      }
+
+      .metric-value {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .top-actions .status-chip {
+        display: none;
+      }
+    }
+
+    @media (max-width: 390px) {
+      .content {
+        padding-inline: 14px;
+      }
+
+      .mobile-nav {
+        left: 8px;
+        right: 8px;
+      }
+
+      .mobile-nav-button span:last-child {
+        font-size: .58rem;
+      }
+
+      .week-strip {
+        gap: 6px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-shell">
+
+    <!-- =========================================================
+         DESKTOP NAVIGATION
+    ========================================================= -->
+    <aside class="sidebar" aria-label="Hauptnavigation Desktop">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>RideLab</span>
+      </div>
+
+      <nav class="nav-stack">
+        <button class="nav-button" data-view-target="home" aria-current="page">
+          <span class="nav-icon">01</span><span>Home</span>
+        </button>
+        <button class="nav-button" data-view-target="rides">
+          <span class="nav-icon">02</span><span>Rides</span>
+        </button>
+        <button class="nav-button" data-view-target="train">
+          <span class="nav-icon">03</span><span>Train</span>
+        </button>
+        <button class="nav-button" data-view-target="progress">
+          <span class="nav-icon">04</span><span>Progress</span>
+        </button>
+        <button class="nav-button" data-view-target="knowledge">
+          <span class="nav-icon">05</span><span>Verstehen</span>
+        </button>
+        <button class="nav-button" data-view-target="profile">
+          <span class="nav-icon">06</span><span>Profil</span>
+        </button>
+        <button class="nav-button" data-view-target="more">
+          <span class="nav-icon">07</span><span>More</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="version-chip">
+          RideLab 0.2.2<br>
+          ALPHA · Foundation
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-shell">
+
+      <!-- =========================================================
+           TOPBAR
+      ========================================================= -->
+      <header class="topbar">
+        <div>
+          <div class="page-kicker" id="pageKicker">Foundation / Demo</div>
+          <h1 class="page-title" id="pageTitle">Home</h1>
+        </div>
+
+        <div class="top-actions">
+          <button class="status-chip" id="profileShortcutButton" type="button">Profil <span id="profileShortcutPercent">0%</span></button>
+          <span class="status-chip alpha">0.2.2 Alpha</span>
+
+          <div class="theme-toggle" role="group" aria-label="Darstellungsmodus wählen">
+            <button class="theme-button" data-theme-choice="bright" aria-label="Bright Mode">☀</button>
+            <button class="theme-button" data-theme-choice="dark" aria-label="Dark Mode">◐</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- =========================================================
+             VIEW: HOME
+             Demo-Dashboard für die Design-Freigabe.
+        ========================================================= -->
+        <section class="view is-active" id="view-home" data-title="Home" data-kicker="Foundation / Demo">
+
+          <section class="hero">
+            <div class="hero-copy">
+              <div class="eyebrow">
+                <span class="status-dot" style="color:var(--accent-lime)"></span>
+                Heute · Demo-Daten
+              </div>
+
+              <h2 class="hero-day">ENDURANCE</h2>
+
+              <div class="hero-plan">
+                <strong>02:10 h</strong>
+                <span>Z2 · 155–195 W</span>
+              </div>
+
+              <div class="button-row" style="margin-top:30px">
+                <button class="button primary" data-view-target="train">Training ansehen</button>
+                <button class="button ghost" data-view-target="knowledge">Warum dieses Training?</button>
+              </div>
+            </div>
+
+            <div class="hero-side">
+              <div class="hero-kpi">
+                <div class="metric-label">Form</div>
+                <div class="metric-value">+8</div>
+                <div class="metric-caption">Frisch genug für einen soliden Ausdauerreiz.</div>
+              </div>
+
+              <div class="hero-message">
+                Kontrolliert fahren. Heute zählt Umfang, nicht maximale Intensität.
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Diese Woche</div>
+                <h2 class="section-title">Training auf einen Blick.</h2>
+              </div>
+              <p class="section-note">Die Werte sind Demo-Daten. Ab Version 0.2.1 werden reale FIT-Dateien verarbeitet.</p>
+            </div>
+
+            <div class="grid-auto">
+              <article class="card card-pad">
+                <span class="status-chip demo">Demo</span>
+                <div class="metric-label" style="margin-top:22px">Distanz</div>
+                <div class="metric-value">184<span class="metric-unit">km</span></div>
+                <p class="metric-caption">+18 % gegenüber der Vorwoche.</p>
+              </article>
+
+              <article class="card card-pad">
+                <span class="status-chip demo">Demo</span>
+                <div class="metric-label" style="margin-top:22px">Zeit</div>
+                <div class="metric-value">06:42<span class="metric-unit">h</span></div>
+                <p class="metric-caption">Geplant sind insgesamt 8:00 Stunden.</p>
+              </article>
+
+              <article class="card card-pad">
+                <span class="status-chip demo">Demo</span>
+                <div class="metric-label" style="margin-top:22px">FTP</div>
+                <div class="metric-value">245<span class="metric-unit">W</span></div>
+                <p class="metric-caption">Functional Threshold Power · Basis für die Leistungszonen.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Wochenrhythmus</div>
+                <h2 class="section-title">Sieben Tage. Eine Logik.</h2>
+              </div>
+            </div>
+
+            <div class="week-strip" aria-label="Demo-Wochenplan">
+              <div class="day-tile"><strong>MO</strong><span>Rest</span></div>
+              <div class="day-tile today"><strong>DI</strong><span>Z2</span></div>
+              <div class="day-tile"><strong>MI</strong><span>Rest</span></div>
+              <div class="day-tile"><strong>DO</strong><span>Sweet Spot</span></div>
+              <div class="day-tile"><strong>FR</strong><span>Easy</span></div>
+              <div class="day-tile"><strong>SA</strong><span>Long Ride</span></div>
+              <div class="day-tile"><strong>SO</strong><span>Recovery</span></div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Coach Insight</div>
+                <h2 class="section-title">Daten sollen eine Entscheidung erleichtern.</h2>
+              </div>
+            </div>
+
+            <article class="card card-pad insight">
+              <div class="insight-index">01</div>
+              <div>
+                <h3>Heute locker bleiben.</h3>
+                <p>Die Demo-Belastung der letzten beiden Tage liegt über dem Wochenmittel. Deshalb bleibt die heutige Einheit bewusst im aeroben Bereich.</p>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <!-- =========================================================
+             VIEW: RIDES
+             Platzhalter für Version 0.2.1.
+        ========================================================= -->
+        <section class="view" id="view-rides" data-title="Rides" data-kicker="Geplant für 0.2.1">
+          <div class="placeholder">
+            <span class="status-chip">Nächste Phase</span>
+            <h2>FIT-Dateien kommen als Nächstes.</h2>
+            <p>Version 0.2.1 ergänzt die Import-Pipeline: Datei prüfen, lesen, normalisieren, Datenqualität bewerten, speichern und Statistiken aktualisieren.</p>
+          </div>
+        </section>
+
+        <!-- =========================================================
+             VIEW: TRAIN
+        ========================================================= -->
+        <section class="view" id="view-train" data-title="Train" data-kicker="Demo / Training">
+          <div class="placeholder">
+            <span class="status-chip demo">Demo</span>
+            <h2>Training soll erklären, nicht nur anweisen.</h2>
+            <p>Jede Einheit wird später beantworten: Was? Warum? Wie? Wie soll es sich anfühlen? Was brauchst du an Fuel?</p>
+          </div>
+        </section>
+
+        <!-- =========================================================
+             VIEW: PROGRESS
+        ========================================================= -->
+        <section class="view" id="view-progress" data-title="Progress" data-kicker="Demo / Entwicklung">
+          <div class="placeholder">
+            <span class="status-chip demo">Demo</span>
+            <h2>Fortschritt wird über Zeit sichtbar.</h2>
+            <p>RideLab wird Wochen, Monate und 12-Wochen-Zeiträume vergleichen – ohne Datenflut und mit sauber erklärten Veränderungen.</p>
+          </div>
+        </section>
+
+        <!-- =========================================================
+             VIEW: RIDELAB VERSTEHEN
+        ========================================================= -->
+        <section class="view" id="view-knowledge" data-title="RideLab verstehen" data-kicker="Knowledge / Einstieg">
+
+          <div class="editorial-intro">
+            <div class="eyebrow">RideLab verstehen · 01</div>
+            <h2 class="editorial-title">Von der Fahrt zur Entscheidung.</h2>
+            <p class="editorial-lead">
+              RideLab sammelt Trainingsdaten nicht um ihrer selbst willen. Die App soll aus Messwerten verständliche Aussagen machen – und daraus sinnvolle nächste Schritte ableiten.
+            </p>
+          </div>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Datenfluss</div>
+                <h2 class="section-title">So arbeitet RideLab.</h2>
+              </div>
+            </div>
+
+            <div class="flow" aria-label="RideLab Datenfluss">
+              <div class="flow-step"><span>01</span><strong>FIT-Datei</strong></div>
+              <div class="flow-step"><span>02</span><strong>Fahrt</strong></div>
+              <div class="flow-step"><span>03</span><strong>Messdaten</strong></div>
+              <div class="flow-step"><span>04</span><strong>Analyse</strong></div>
+              <div class="flow-step"><span>05</span><strong>Belastung</strong></div>
+              <div class="flow-step"><span>06</span><strong>Entwicklung</strong></div>
+              <div class="flow-step"><span>07</span><strong>Empfehlung</strong></div>
+              <div class="flow-step"><span>08</span><strong>Nächstes Training</strong></div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Datenherkunft</div>
+                <h2 class="section-title">Gemessen, berechnet oder geschätzt?</h2>
+              </div>
+              <p class="section-note">RideLab soll immer transparent machen, woher ein Wert stammt.</p>
+            </div>
+
+            <div class="data-origin-grid">
+              <article class="origin-card">
+                <span class="status-chip good">Measured</span>
+                <h3>Gemessen</h3>
+                <p>Direkt von einem Sensor aufgezeichnet, zum Beispiel Leistung, Herzfrequenz oder Kadenz.</p>
+              </article>
+
+              <article class="origin-card">
+                <span class="status-chip">Calculated</span>
+                <h3>Berechnet</h3>
+                <p>Mathematisch aus Messdaten bestimmt, zum Beispiel Durchschnittsleistung oder Training Load.</p>
+              </article>
+
+              <article class="origin-card">
+                <span class="status-chip">Estimated</span>
+                <h3>Geschätzt</h3>
+                <p>Aus vorhandenen Daten abgeleitet. Solche Werte müssen ausdrücklich als Schätzung gekennzeichnet sein.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Begriffe</div>
+                <h2 class="section-title">Fachlich korrekt. Trotzdem verständlich.</h2>
+              </div>
+            </div>
+
+            <div class="knowledge-grid">
+              <article class="knowledge-card wide">
+                <div class="knowledge-number">01</div>
+                <div>
+                  <h3>FTP · Functional Threshold Power</h3>
+                  <p>Die höchste durchschnittliche Leistung, die ungefähr eine Stunde lang gehalten werden kann. Sie ist eine wichtige Bezugsgröße für deine Leistungszonen.</p>
+                </div>
+              </article>
+
+              <article class="knowledge-card">
+                <div class="knowledge-number">02</div>
+                <div>
+                  <h3>Sweet Spot</h3>
+                  <p>Ein intensiver Bereich knapp unterhalb der FTP. Er erzeugt einen starken Trainingsreiz, ohne so belastend wie echtes Schwellentraining zu sein.</p>
+                </div>
+              </article>
+
+              <article class="knowledge-card">
+                <div class="knowledge-number">03</div>
+                <div>
+                  <h3>Training Load</h3>
+                  <p>Eine zusammenfassende Einschätzung, wie stark eine Einheit den Körper belastet hat.</p>
+                </div>
+              </article>
+
+              <article class="knowledge-card wide">
+                <div class="knowledge-number">04</div>
+                <div>
+                  <h3>Fuel</h3>
+                  <p>Die geplante Versorgung während des Trainings: vor allem Kohlenhydrate, Flüssigkeit und Natrium. RideLab soll später passend zu Dauer und Intensität konkrete Mengen vorschlagen.</p>
+                </div>
+              </article>
+            </div>
+          </section>
+        </section>
+
+
+        <!-- =========================================================
+             VIEW: ATHLETE PROFILE
+        ========================================================= -->
+        <section class="view" id="view-profile" data-title="Fahrerprofil" data-kicker="Athlete / Profile">
+          <section class="section" style="margin-top:0">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">Athlete Profile</div>
+                <h2 class="section-title">Deine Basis für persönliche Empfehlungen.</h2>
+              </div>
+              <button class="button secondary" id="editProfileButton">Profil bearbeiten</button>
+            </div>
+
+            <div class="profile-layout">
+              <article class="card card-pad profile-ring-card">
+                <div>
+                  <div class="profile-ring" id="profileRing">
+                    <div class="profile-ring-content">
+                      <div class="profile-ring-value" id="profileRingValue">0%</div>
+                      <div class="profile-ring-label">Profil vollständig</div>
+                    </div>
+                  </div>
+                  <p class="metric-caption" id="profileCompletenessText" style="margin-inline:auto; margin-top:22px;">
+                    Noch keine Profildaten gespeichert.
+                  </p>
+                </div>
+              </article>
+
+              <article class="card card-pad profile-summary">
+                <div>
+                  <span class="status-chip" id="profileStatusChip">Profil</span>
+                  <h3 style="font-size:var(--font-h3); margin:18px 0 6px;">Fahrerdaten</h3>
+                  <p style="margin:0; color:var(--text-soft);">Diese Werte bilden die Grundlage für W/kg, Trainingszonen, Belastung und später Fuel-Empfehlungen.</p>
+                </div>
+
+                <div class="profile-list" id="profileList"></div>
+
+                <div>
+                  <div class="metric-label">Noch ergänzbar</div>
+                  <ul class="missing-list" id="missingProfileList"></ul>
+                </div>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <!-- =========================================================
+             VIEW: MORE / QA
+        ========================================================= -->
+        <section class="view" id="view-more" data-title="More" data-kicker="System / QA">
+          <section class="section" style="margin-top:0">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">RideLab System</div>
+                <h2 class="section-title">Foundation Status.</h2>
+              </div>
+              <p class="section-note">Dieser Bereich hilft später beim Support und Bugfixing.</p>
+            </div>
+
+            <div class="system-grid">
+              <article class="system-card">
+                <div class="metric-label">App Version</div>
+                <strong>0.2.1</strong>
+              </article>
+              <article class="system-card">
+                <div class="metric-label">Database Version</div>
+                <strong>1</strong>
+              </article>
+              <article class="system-card">
+                <div class="metric-label">Release</div>
+                <strong>ALPHA</strong>
+              </article>
+              <article class="system-card">
+                <div class="metric-label">Theme</div>
+                <strong id="systemThemeValue">DARK</strong>
+              </article>
+              <article class="system-card">
+                <div class="metric-label">Profile</div>
+                <strong id="systemProfileValue">0%</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">QA</div>
+                <h2 class="section-title">System Check.</h2>
+              </div>
+              <button class="button secondary" id="runTestsButton">Tests erneut ausführen</button>
+            </div>
+
+            <article class="card card-pad">
+              <div class="button-row">
+                <span class="status-chip" id="qaSummaryChip">Noch nicht geprüft</span>
+              </div>
+              <div class="qa-table" id="qaTable"></div>
+            </article>
+          </section>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+
+  <!-- =========================================================
+       ATHLETE ONBOARDING 0.2.2
+       iPhone-first / native-inspiriert
+  ========================================================= -->
+  <section class="onboarding-overlay" id="onboardingOverlay" aria-modal="true" role="dialog" aria-labelledby="onboardingTitle">
+    <div class="onboarding-shell">
+
+      <header class="onboarding-header">
+        <button class="onboarding-back-icon is-hidden" id="onboardingBackButton" type="button" aria-label="Zurück">‹</button>
+
+        <div class="onboarding-progress" aria-label="Onboarding Fortschritt">
+          <div class="progress-meta">
+            <div class="progress-label" id="onboardingProgressLabel">Schritt 1 von 9</div>
+            <div class="progress-percent" id="onboardingProgressPercent">11%</div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="onboardingProgressFill"></div>
+          </div>
+        </div>
+
+        <button class="onboarding-close" id="onboardingCloseButton" type="button" aria-label="Setup später fortsetzen">×</button>
+      </header>
+
+      <div class="onboarding-body" id="onboardingBody">
+        <form id="onboardingForm" novalidate>
+
+          <!-- 01: Willkommen -->
+          <section class="onboarding-step is-active" data-step="0">
+            <div class="step-kicker">RideLab Setup · 01</div>
+            <h2 id="onboardingTitle">Dein Training beginnt mit dir.</h2>
+            <p>Ein paar Angaben reichen, damit RideLab spätere Leistungswerte, Trainingszonen und Empfehlungen sinnvoll auf dich beziehen kann.</p>
+
+            <div class="helper-card">
+              Du musst keine Fachbegriffe kennen. FTP, HRmax oder LTHR können jederzeit später ergänzt werden.
+            </div>
+          </section>
+
+          <!-- 02: Geburtsjahr -->
+          <section class="onboarding-step" data-step="1">
+            <div class="step-kicker">Basis · 02</div>
+            <h2>In welchem Jahr bist du geboren?</h2>
+            <p>RideLab berechnet daraus dein Alter automatisch. Das ist für Trainingssteuerung und Einordnung hilfreicher als ein fest gespeichertes Alter.</p>
+
+            <div class="single-value-wrap">
+              <label class="single-value-label" for="profileBirthYear">Geburtsjahr</label>
+              <input class="single-value-input" id="profileBirthYear" name="birthYear" type="number" inputmode="numeric" min="1920" max="2012" placeholder="1968">
+            </div>
+          </section>
+
+          <!-- 03: Körperdaten -->
+          <section class="onboarding-step" data-step="2">
+            <div class="step-kicker">Basis · 03</div>
+            <h2>Deine Körperdaten.</h2>
+            <p>Gewicht und Größe werden später unter anderem für W/kg, Fueling und die persönliche Einordnung von Leistungswerten verwendet.</p>
+
+            <div class="pair-grid">
+              <div class="value-card">
+                <label for="profileHeight">Größe</label>
+                <input id="profileHeight" name="heightCm" type="number" inputmode="decimal" min="120" max="230" placeholder="190">
+                <small>cm</small>
+              </div>
+
+              <div class="value-card">
+                <label for="profileWeight">Gewicht</label>
+                <input id="profileWeight" name="weightKg" type="number" inputmode="decimal" min="35" max="250" step="0.1" placeholder="90">
+                <small>kg</small>
+              </div>
+            </div>
+
+            <div class="value-card" style="margin-top:14px;">
+              <label for="profileSex">Geschlecht · optional</label>
+              <select id="profileSex" name="sex">
+                <option value="">Keine Angabe</option>
+                <option value="male">Männlich</option>
+                <option value="female">Weiblich</option>
+                <option value="diverse">Divers / andere Angabe</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- 04: Fahrarten Mehrfachauswahl -->
+          <section class="onboarding-step" data-step="3">
+            <div class="step-kicker">Training · 04</div>
+            <h2>Wie fährst du?</h2>
+            <p>Wähle alles aus, was zu deinem Training gehört. Mehrfachauswahl ist ausdrücklich möglich.</p>
+
+            <div class="choice-list">
+              <label class="choice-row">
+                <span class="choice-copy">
+                  <span class="choice-title">Rennrad</span>
+                  <span class="choice-subtitle">Straße, Endurance, Intervalle, lange Ausfahrten.</span>
+                </span>
+                <input type="checkbox" name="bikeTypes" value="road">
+              </label>
+
+              <label class="choice-row">
+                <span class="choice-copy">
+                  <span class="choice-title">Gravel</span>
+                  <span class="choice-subtitle">Gemischter Untergrund, Technik und Ausdauer.</span>
+                </span>
+                <input type="checkbox" name="bikeTypes" value="gravel">
+              </label>
+
+              <label class="choice-row">
+                <span class="choice-copy">
+                  <span class="choice-title">Indoor / Smart Trainer</span>
+                  <span class="choice-subtitle">Strukturierte Einheiten zu Hause.</span>
+                </span>
+                <input type="checkbox" name="bikeTypes" value="indoor">
+              </label>
+            </div>
+          </section>
+
+          <!-- 05: Ziele Mehrfachauswahl -->
+          <section class="onboarding-step" data-step="4">
+            <div class="step-kicker">Ziele · 05</div>
+            <h2>Was willst du erreichen?</h2>
+            <p>Wähle mehrere Ziele, wenn sie gleichzeitig wichtig sind. Im nächsten Schritt bestimmst du ein Primärziel.</p>
+
+            <div class="choice-list">
+              <label class="choice-row compact">
+                <span class="choice-copy">
+                  <span class="choice-title">Allgemeine Fitness</span>
+                </span>
+                <input type="checkbox" name="goals" value="fitness">
+              </label>
+
+              <label class="choice-row compact">
+                <span class="choice-copy">
+                  <span class="choice-title">FTP steigern</span>
+                </span>
+                <input type="checkbox" name="goals" value="ftp">
+              </label>
+
+              <label class="choice-row compact">
+                <span class="choice-copy">
+                  <span class="choice-title">Ausdauer verbessern</span>
+                </span>
+                <input type="checkbox" name="goals" value="endurance">
+              </label>
+
+              <label class="choice-row compact">
+                <span class="choice-copy">
+                  <span class="choice-title">Gewicht reduzieren</span>
+                </span>
+                <input type="checkbox" name="goals" value="weight">
+              </label>
+
+              <label class="choice-row compact">
+                <span class="choice-copy">
+                  <span class="choice-title">Event vorbereiten</span>
+                </span>
+                <input type="checkbox" name="goals" value="event">
+              </label>
+            </div>
+          </section>
+
+          <!-- 06: Primärziel -->
+          <section class="onboarding-step" data-step="5">
+            <div class="step-kicker">Ziele · 06</div>
+            <h2>Was ist dir am wichtigsten?</h2>
+            <p>RideLab kann mehrere Ziele berücksichtigen. Eines davon dient als primäre Richtung für Trainingsentscheidungen.</p>
+
+            <div class="choice-list" id="primaryGoalChoiceList">
+              <!-- Wird dynamisch aus den zuvor ausgewählten Zielen aufgebaut. -->
+            </div>
+          </section>
+
+          <!-- 07: Zeit & Erfahrung -->
+          <section class="onboarding-step" data-step="6">
+            <div class="step-kicker">Training · 07</div>
+            <h2>Wie viel Zeit hast du?</h2>
+            <p>Trainingsvorschläge müssen in deinen Alltag passen. RideLab soll nicht mehr Training planen, als realistisch verfügbar ist.</p>
+
+            <div class="pair-grid">
+              <div class="value-card">
+                <label for="profileWeeklyHours">Wochenstunden</label>
+                <input id="profileWeeklyHours" name="weeklyHours" type="number" inputmode="decimal" min="1" max="30" step="0.5" placeholder="6">
+                <small>h / Woche</small>
+              </div>
+
+              <div class="value-card">
+                <label for="profileExperience">Erfahrungslevel</label>
+                <select id="profileExperience" name="experience">
+                  <option value="">Bitte wählen</option>
+                  <option value="beginner">Einsteiger</option>
+                  <option value="intermediate">Fortgeschritten</option>
+                  <option value="advanced">Ambitioniert / erfahren</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <!-- 08: Leistungswerte -->
+          <section class="onboarding-step" data-step="7">
+            <div class="step-kicker">Leistung · 08</div>
+            <h2>Was weißt du schon?</h2>
+            <p>Diese Werte sind optional. Lass Unbekanntes einfach leer. RideLab kann später Tests vorschlagen oder Schätzungen aus echten Fahrtdaten ableiten.</p>
+
+            <div class="pair-grid">
+              <div class="value-card">
+                <label for="profileFtp">FTP</label>
+                <input id="profileFtp" name="ftp" type="number" inputmode="numeric" min="50" max="700" placeholder="245">
+                <small>W · Functional Threshold Power</small>
+              </div>
+
+              <div class="value-card">
+                <label for="profileHrMax">HR max</label>
+                <input id="profileHrMax" name="hrMax" type="number" inputmode="numeric" min="100" max="230" placeholder="178">
+                <small>bpm · maximale Herzfrequenz</small>
+              </div>
+
+              <div class="value-card">
+                <label for="profileLthr">LTHR</label>
+                <input id="profileLthr" name="lthr" type="number" inputmode="numeric" min="90" max="220" placeholder="optional">
+                <small>bpm · Herzfrequenz an der Schwelle</small>
+              </div>
+
+              <div class="value-card">
+                <label for="profilePowerMeter">Powermeter</label>
+                <select id="profilePowerMeter" name="powerMeter">
+                  <option value="">Keine Angabe</option>
+                  <option value="yes">Ja</option>
+                  <option value="no">Nein</option>
+                </select>
+                <small>Kann später für Power-basierte Trainingssteuerung verwendet werden.</small>
+              </div>
+            </div>
+          </section>
+
+          <!-- 09: Abschluss -->
+          <section class="onboarding-step" data-step="8">
+            <div class="step-kicker">Fertig · 09</div>
+            <h2>Das ist deine Basis.</h2>
+            <p>Nach dem Speichern siehst du sofort die Vollständigkeit deines Fahrerprofils. Optionale Angaben kannst du jederzeit ergänzen.</p>
+
+            <div class="summary-card" id="onboardingSummaryCard">
+              <div class="summary-row"><span>Profilvollständigkeit</span><span id="onboardingProfilePreview">0%</span></div>
+              <div class="summary-row"><span>Pflichtdaten</span><span id="onboardingRequiredStatus">Offen</span></div>
+              <div class="summary-row"><span>Primärziel</span><span id="onboardingPrimaryGoalSummary">Nicht gewählt</span></div>
+              <div class="summary-row"><span>Trainingsarten</span><span id="onboardingBikeSummary">Nicht gewählt</span></div>
+            </div>
+          </section>
+
+        </form>
+      </div>
+
+      <footer class="onboarding-footer">
+        <button class="onboarding-secondary-action" id="onboardingSkipButton" type="button">Später</button>
+        <button class="onboarding-primary-action" id="onboardingNextButton" type="button">Weiter</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       MOBILE NAVIGATION
+       Auf kleineren Displays ersetzt sie die Desktop-Sidebar.
+  ========================================================= -->
+  <nav class="mobile-nav" aria-label="Hauptnavigation Mobile">
+    <button class="mobile-nav-button" data-view-target="home" aria-current="page">
+      <span>01</span><span>Home</span>
+    </button>
+    <button class="mobile-nav-button" data-view-target="rides">
+      <span>02</span><span>Rides</span>
+    </button>
+    <button class="mobile-nav-button" data-view-target="train">
+      <span>03</span><span>Train</span>
+    </button>
+    <button class="mobile-nav-button" data-view-target="progress">
+      <span>04</span><span>Progress</span>
+    </button>
+    <button class="mobile-nav-button" data-view-target="more">
+      <span>05</span><span>More</span>
+    </button>
+  </nav>
+
+  <script>
+    /* =========================================================
+       01 — VERSION / CONFIGURATION
+    ========================================================= */
+
+    const RIDELAB_VERSION = '0.2.2';
+    const RIDELAB_DATABASE_VERSION = 1;
+    const RIDELAB_RELEASE_STATUS = 'ALPHA';
+    const RIDELAB_DEBUG_MODE = false;
+
+    /*
+      APP STATE
+      ---------
+      Zentrale Zustandsablage der Foundation-Version.
+      Später werden hier zusätzliche Bereiche wie rides und trainingPlan
+      ergänzt. Ziel ist eine "Single Source of Truth".
+    */
+    const appState = {
+      ui: {
+        activeView: 'home',
+        theme: document.documentElement.getAttribute('data-theme') || 'dark',
+        onboardingStep: 0
+      },
+      user: null
+    };
+
+    const PROFILE_STORAGE_KEY = 'ridelab.athleteProfile';
+    const ONBOARDING_STORAGE_KEY = 'ridelab.onboardingCompleted';
+
+
+    /* =========================================================
+       02 — ATHLETE PROFILE ENGINE
+    ========================================================= */
+
+    function loadAthleteProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+        appState.user = raw ? JSON.parse(raw) : null;
+      } catch (error) {
+        appState.user = null;
+        if (RIDELAB_DEBUG_MODE) console.error('[RideLab] Profile load failed', error);
+      }
+
+      return appState.user;
+    }
+
+    function saveAthleteProfile(profile) {
+      appState.user = profile;
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+      renderAthleteProfile();
+    }
+
+    function calculateAgeFromBirthYear(birthYear) {
+      const year = Number(birthYear);
+      if (!year) return null;
+      return new Date().getFullYear() - year;
+    }
+
+    function calculateProfileCompleteness(profile) {
+      /*
+        WAS?
+        Berechnet die Vollständigkeit des Fahrerprofils in Prozent.
+
+        WARUM?
+        Pflichtdaten bilden die Basis. Optionale Leistungsdaten
+        machen das Profil präziser und erhöhen deshalb den Wert.
+
+        GEWICHTUNG:
+        Basisprofil / Training = 65 %
+        Leistungsdaten          = 25 %
+        Zusatzinformationen     = 10 %
+      */
+      if (!profile) return 0;
+
+      const fields = [
+        { key: 'birthYear', weight: 10 },
+        { key: 'heightCm', weight: 10 },
+        { key: 'weightKg', weight: 10 },
+        { key: 'experience', weight: 10 },
+        { key: 'weeklyHours', weight: 10 },
+        { key: 'goal', weight: 10 },
+        { key: 'goals', weight: 5, array: true },
+
+        { key: 'ftp', weight: 10 },
+        { key: 'hrMax', weight: 8 },
+        { key: 'lthr', weight: 4 },
+        { key: 'powerMeter', weight: 3 },
+
+        { key: 'sex', weight: 3 },
+        { key: 'bikeTypes', weight: 7, array: true }
+      ];
+
+      const totalWeight = fields.reduce((sum, field) => sum + field.weight, 0);
+      const achievedWeight = fields.reduce((sum, field) => {
+        const value = profile[field.key];
+        const complete = field.array ? Array.isArray(value) && value.length > 0 : value !== '' && value !== null && value !== undefined;
+        return sum + (complete ? field.weight : 0);
+      }, 0);
+
+      return Math.round((achievedWeight / totalWeight) * 100);
+    }
+
+    function getMissingProfileItems(profile) {
+      const missing = [];
+      if (!profile?.birthYear) missing.push('Geburtsjahr');
+      if (!profile?.heightCm) missing.push('Größe');
+      if (!profile?.weightKg) missing.push('Gewicht');
+      if (!profile?.experience) missing.push('Erfahrungslevel');
+      if (!profile?.weeklyHours) missing.push('Wochenstunden');
+      if (!profile?.goal) missing.push('Primäres Trainingsziel');
+      if (!Array.isArray(profile?.goals) || profile.goals.length === 0) missing.push('Trainingsziele');
+      if (!profile?.ftp) missing.push('FTP');
+      if (!profile?.hrMax) missing.push('maximale Herzfrequenz');
+      if (!profile?.lthr) missing.push('LTHR');
+      if (!profile?.powerMeter) missing.push('Powermeter-Status');
+      if (!profile?.sex) missing.push('Geschlecht');
+      if (!Array.isArray(profile?.bikeTypes) || profile.bikeTypes.length === 0) missing.push('Trainingsarten');
+      return missing;
+    }
+
+    function formatProfileValue(key, value) {
+      if (value === '' || value === null || value === undefined) return 'Nicht angegeben';
+
+      const dictionaries = {
+        sex: { male: 'Männlich', female: 'Weiblich', diverse: 'Divers / andere Angabe' },
+        experience: { beginner: 'Einsteiger', intermediate: 'Fortgeschritten', advanced: 'Ambitioniert / erfahren' },
+        goal: { fitness: 'Allgemeine Fitness', ftp: 'FTP steigern', endurance: 'Ausdauer verbessern', weight: 'Gewicht reduzieren', event: 'Event vorbereiten' },
+        goals: { fitness: 'Allgemeine Fitness', ftp: 'FTP steigern', endurance: 'Ausdauer verbessern', weight: 'Gewicht reduzieren', event: 'Event vorbereiten' },
+        powerMeter: { yes: 'Ja', no: 'Nein' },
+        bikeTypes: { road: 'Rennrad', gravel: 'Gravel', indoor: 'Indoor' }
+      };
+
+      if (key === 'bikeTypes' && Array.isArray(value)) {
+        return value.map(item => dictionaries.bikeTypes[item] || item).join(', ') || 'Nicht angegeben';
+      }
+
+      if (key === 'goals' && Array.isArray(value)) {
+        return value.map(item => dictionaries.goals[item] || item).join(', ') || 'Nicht angegeben';
+      }
+
+      if (dictionaries[key]) return dictionaries[key][value] || value;
+      if (key === 'heightCm') return `${value} cm`;
+      if (key === 'weightKg') return `${value} kg`;
+      if (key === 'weeklyHours') return `${value} h / Woche`;
+      if (key === 'ftp') return `${value} W`;
+      if (['hrMax', 'lthr'].includes(key)) return `${value} bpm`;
+      if (key === 'birthYear') return `${value} · ca. ${calculateAgeFromBirthYear(value)} Jahre`;
+
+      return String(value);
+    }
+
+    function renderAthleteProfile() {
+      const profile = appState.user;
+      const completeness = calculateProfileCompleteness(profile);
+      const missing = getMissingProfileItems(profile);
+
+      document.getElementById('profileRing').style.setProperty('--profile-progress', completeness);
+      document.getElementById('profileRingValue').textContent = `${completeness}%`;
+      document.getElementById('profileShortcutPercent').textContent = `${completeness}%`;
+      document.getElementById('systemProfileValue').textContent = `${completeness}%`;
+
+      const text = document.getElementById('profileCompletenessText');
+      const chip = document.getElementById('profileStatusChip');
+
+      if (!profile) {
+        text.textContent = 'Noch keine Profildaten gespeichert.';
+        chip.textContent = 'Profil fehlt';
+      } else if (completeness === 100) {
+        text.textContent = 'Dein Fahrerprofil ist vollständig.';
+        chip.textContent = 'Vollständig';
+        chip.className = 'status-chip good';
+      } else {
+        text.textContent = `${missing.length} Angaben können dein Profil noch präziser machen.`;
+        chip.textContent = 'In Arbeit';
+        chip.className = 'status-chip';
+      }
+
+      const rows = [
+        ['Geburtsjahr / Alter', formatProfileValue('birthYear', profile?.birthYear)],
+        ['Größe', formatProfileValue('heightCm', profile?.heightCm)],
+        ['Gewicht', formatProfileValue('weightKg', profile?.weightKg)],
+        ['Erfahrung', formatProfileValue('experience', profile?.experience)],
+        ['Wochenstunden', formatProfileValue('weeklyHours', profile?.weeklyHours)],
+        ['Primärziel', formatProfileValue('goal', profile?.goal)],
+        ['Weitere Ziele', formatProfileValue('goals', profile?.goals)],
+        ['Trainingsarten', formatProfileValue('bikeTypes', profile?.bikeTypes)],
+        ['FTP', formatProfileValue('ftp', profile?.ftp)],
+        ['HR max', formatProfileValue('hrMax', profile?.hrMax)],
+        ['LTHR', formatProfileValue('lthr', profile?.lthr)],
+        ['Powermeter', formatProfileValue('powerMeter', profile?.powerMeter)]
+      ];
+
+      document.getElementById('profileList').innerHTML = rows.map(([label, value]) => `
+        <div class="profile-row">
+          <span>${label}</span>
+          <span>${value}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('missingProfileList').innerHTML = missing.length
+        ? missing.map(item => `<li>${item}</li>`).join('')
+        : '<li>Keine Angaben fehlen.</li>';
+    }
+
+    function collectProfileFromForm() {
+      const form = document.getElementById('onboardingForm');
+      const formData = new FormData(form);
+
+      return {
+        birthYear: formData.get('birthYear') || '',
+        sex: formData.get('sex') || '',
+        heightCm: formData.get('heightCm') || '',
+        weightKg: formData.get('weightKg') || '',
+        experience: formData.get('experience') || '',
+        weeklyHours: formData.get('weeklyHours') || '',
+        bikeTypes: formData.getAll('bikeTypes'),
+        goals: formData.getAll('goals'),
+        goal: formData.get('goal') || '',
+        ftp: formData.get('ftp') || '',
+        hrMax: formData.get('hrMax') || '',
+        lthr: formData.get('lthr') || '',
+        powerMeter: formData.get('powerMeter') || '',
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function populateProfileForm(profile) {
+      const form = document.getElementById('onboardingForm');
+      form.reset();
+      if (!profile) return;
+
+      ['birthYear','sex','heightCm','weightKg','experience','weeklyHours','ftp','hrMax','lthr','powerMeter'].forEach(key => {
+        const field = form.elements[key];
+        if (field) field.value = profile[key] || '';
+      });
+
+      form.querySelectorAll('input[name="bikeTypes"]').forEach(input => {
+        input.checked = Array.isArray(profile.bikeTypes) && profile.bikeTypes.includes(input.value);
+      });
+
+      form.querySelectorAll('input[name="goals"]').forEach(input => {
+        input.checked = Array.isArray(profile.goals) && profile.goals.includes(input.value);
+      });
+
+      buildPrimaryGoalChoices();
+
+      form.querySelectorAll('input[name="goal"]').forEach(input => {
+        input.checked = input.value === profile.goal;
+      });
+    }
+
+    function validateRequiredProfileData(profile) {
+      return Boolean(
+        profile.birthYear &&
+        profile.heightCm &&
+        profile.weightKg &&
+        profile.experience &&
+        profile.weeklyHours &&
+        Array.isArray(profile.bikeTypes) && profile.bikeTypes.length > 0 &&
+        Array.isArray(profile.goals) && profile.goals.length > 0 &&
+        profile.goal
+      );
+    }
+
+
+    const GOAL_LABELS = {
+      fitness: 'Allgemeine Fitness',
+      ftp: 'FTP steigern',
+      endurance: 'Ausdauer verbessern',
+      weight: 'Gewicht reduzieren',
+      event: 'Event vorbereiten'
+    };
+
+    function buildPrimaryGoalChoices() {
+      const container = document.getElementById('primaryGoalChoiceList');
+      if (!container) return;
+
+      const form = document.getElementById('onboardingForm');
+      const selectedGoals = new FormData(form).getAll('goals');
+      const currentPrimary = form.elements.goal ? form.elements.goal.value : '';
+
+      if (selectedGoals.length === 0) {
+        container.innerHTML = `
+          <div class="helper-card">
+            Wähle im vorherigen Schritt mindestens ein Ziel aus.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = selectedGoals.map(goal => `
+        <label class="choice-row compact">
+          <span class="choice-copy">
+            <span class="choice-title">${GOAL_LABELS[goal] || goal}</span>
+          </span>
+          <input type="radio" name="goal" value="${goal}" ${currentPrimary === goal ? 'checked' : ''}>
+        </label>
+      `).join('');
+
+      const primaryInputs = container.querySelectorAll('input[name="goal"]');
+      if (primaryInputs.length === 1 && !primaryInputs[0].checked) {
+        primaryInputs[0].checked = true;
+      }
+    }
+
+    function validateCurrentOnboardingStep(stepIndex) {
+      const profile = collectProfileFromForm();
+
+      if (stepIndex === 1 && !profile.birthYear) {
+        return 'Bitte gib dein Geburtsjahr an.';
+      }
+
+      if (stepIndex === 2 && (!profile.heightCm || !profile.weightKg)) {
+        return 'Bitte ergänze Größe und Gewicht.';
+      }
+
+      if (stepIndex === 3 && (!Array.isArray(profile.bikeTypes) || profile.bikeTypes.length === 0)) {
+        return 'Bitte wähle mindestens eine Trainingsart aus.';
+      }
+
+      if (stepIndex === 4 && (!Array.isArray(profile.goals) || profile.goals.length === 0)) {
+        return 'Bitte wähle mindestens ein Trainingsziel aus.';
+      }
+
+      if (stepIndex === 5 && !profile.goal) {
+        return 'Bitte wähle dein Primärziel aus.';
+      }
+
+      if (stepIndex === 6 && (!profile.weeklyHours || !profile.experience)) {
+        return 'Bitte ergänze Wochenstunden und Erfahrungslevel.';
+      }
+
+      return '';
+    }
+
+    function updateOnboardingSummary(profile) {
+      const completeness = calculateProfileCompleteness(profile);
+
+      const preview = document.getElementById('onboardingProfilePreview');
+      const required = document.getElementById('onboardingRequiredStatus');
+      const primary = document.getElementById('onboardingPrimaryGoalSummary');
+      const bikes = document.getElementById('onboardingBikeSummary');
+
+      if (preview) preview.textContent = `${completeness}%`;
+      if (required) required.textContent = validateRequiredProfileData(profile) ? 'Vollständig' : 'Offen';
+      if (primary) primary.textContent = profile.goal ? (GOAL_LABELS[profile.goal] || profile.goal) : 'Nicht gewählt';
+      if (bikes) bikes.textContent = formatProfileValue('bikeTypes', profile.bikeTypes);
+    }
+
+
+    function openOnboarding({ edit = false } = {}) {
+      populateProfileForm(appState.user);
+      appState.ui.onboardingStep = edit ? 1 : 0;
+      document.getElementById('onboardingOverlay').classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+      buildPrimaryGoalChoices();
+      updateOnboardingUI();
+    }
+
+    function closeOnboarding() {
+      document.getElementById('onboardingOverlay').classList.remove('is-open');
+      document.body.style.overflow = '';
+    }
+
+    function updateOnboardingUI() {
+      const steps = [...document.querySelectorAll('.onboarding-step')];
+      const currentStep = appState.ui.onboardingStep;
+
+      steps.forEach((step, index) => step.classList.toggle('is-active', index === currentStep));
+
+      const progress = ((currentStep + 1) / steps.length) * 100;
+      document.getElementById('onboardingProgressFill').style.width = `${progress}%`;
+      document.getElementById('onboardingProgressLabel').textContent = `Schritt ${currentStep + 1} von ${steps.length}`;
+      document.getElementById('onboardingProgressPercent').textContent = `${Math.round(progress)}%`;
+
+      const backButton = document.getElementById('onboardingBackButton');
+      const nextButton = document.getElementById('onboardingNextButton');
+      const skipButton = document.getElementById('onboardingSkipButton');
+
+      backButton.classList.toggle('is-hidden', currentStep === 0);
+      nextButton.textContent = currentStep === steps.length - 1 ? 'Profil speichern' : 'Weiter';
+      skipButton.textContent = currentStep === 0 ? 'Später' : 'Später fortsetzen';
+
+      if (currentStep === 5) {
+        buildPrimaryGoalChoices();
+      }
+
+      const profile = collectProfileFromForm();
+      updateOnboardingSummary(profile);
+
+      const body = document.getElementById('onboardingBody');
+      if (body) body.scrollTop = 0;
+    }
+
+    function advanceOnboarding() {
+      const steps = document.querySelectorAll('.onboarding-step');
+      const currentStep = appState.ui.onboardingStep;
+
+      if (currentStep < steps.length - 1) {
+        const validationMessage = validateCurrentOnboardingStep(currentStep);
+
+        if (validationMessage) {
+          alert(validationMessage);
+          return;
+        }
+
+        appState.ui.onboardingStep += 1;
+        updateOnboardingUI();
+        return;
+      }
+
+      const profile = collectProfileFromForm();
+
+      if (!validateRequiredProfileData(profile)) {
+        alert('Bitte vervollständige zuerst die erforderlichen Basisangaben.');
+        return;
+      }
+
+      saveAthleteProfile(profile);
+      closeOnboarding();
+      openView('profile');
+    }
+
+    /* =========================================================
+       02 — THEME ENGINE
+    ========================================================= */
+
+    function applyTheme(theme) {
+      /*
+        WAS?
+        Setzt Dark oder Bright Mode.
+
+        WARUM?
+        Alle UI-Komponenten lesen ihre Farben aus den Design Tokens.
+
+        INPUT:
+        "dark" oder "bright"
+
+        OUTPUT:
+        Kein Rückgabewert. Das HTML-Attribut und LocalStorage werden aktualisiert.
+      */
+      if (!['dark', 'bright'].includes(theme)) return;
+
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('ridelab.theme', theme);
+      appState.ui.theme = theme;
+
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      themeMeta.setAttribute('content', theme === 'dark' ? '#090909' : '#F2F0E8');
+
+      updateThemeButtons();
+      updateSystemThemeValue();
+    }
+
+    function updateThemeButtons() {
+      document.querySelectorAll('[data-theme-choice]').forEach(button => {
+        const isActive = button.dataset.themeChoice === appState.ui.theme;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+      });
+    }
+
+    function updateSystemThemeValue() {
+      const element = document.getElementById('systemThemeValue');
+      if (element) element.textContent = appState.ui.theme.toUpperCase();
+    }
+
+    /* =========================================================
+       03 — NAVIGATION
+    ========================================================= */
+
+    function openView(viewName) {
+      /*
+        WAS?
+        Wechselt zwischen den internen App-Ansichten.
+
+        WARUM?
+        In Version 0.2.1 ist RideLab eine einzelne HTML-Datei.
+        Die "Unterseiten" sind deshalb intern getrennte Views.
+
+        INPUT:
+        Name der Ansicht, z. B. "home" oder "knowledge".
+      */
+      const targetView = document.getElementById(`view-${viewName}`);
+      if (!targetView) return;
+
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.toggle('is-active', view === targetView);
+      });
+
+      document.querySelectorAll('[data-view-target]').forEach(button => {
+        const isActive = button.dataset.viewTarget === viewName;
+        if (button.classList.contains('nav-button') || button.classList.contains('mobile-nav-button')) {
+          if (isActive) {
+            button.setAttribute('aria-current', 'page');
+          } else {
+            button.removeAttribute('aria-current');
+          }
+        }
+      });
+
+      appState.ui.activeView = viewName;
+
+      document.getElementById('pageTitle').textContent = targetView.dataset.title || 'RideLab';
+      document.getElementById('pageKicker').textContent = targetView.dataset.kicker || '';
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (RIDELAB_DEBUG_MODE) {
+        console.log('[RideLab] View changed:', viewName);
+      }
+    }
+
+    /* =========================================================
+       04 — QA / SELF TESTS
+       Kleine interne Tests helfen bereits in der Foundation-Version,
+       typische Fehler früh zu erkennen.
+    ========================================================= */
+
+    function getQATests() {
+      return [
+        {
+          name: 'App-Version vorhanden',
+          run: () => RIDELAB_VERSION === '0.2.1'
+        },
+        {
+          name: 'Theme ist gültig',
+          run: () => ['dark', 'bright'].includes(appState.ui.theme)
+        },
+        {
+          name: 'Home View vorhanden',
+          run: () => Boolean(document.getElementById('view-home'))
+        },
+        {
+          name: 'Knowledge View vorhanden',
+          run: () => Boolean(document.getElementById('view-knowledge'))
+        },
+        {
+          name: 'Mobile Navigation vorhanden',
+          run: () => Boolean(document.querySelector('.mobile-nav'))
+        },
+        {
+          name: 'Desktop Navigation vorhanden',
+          run: () => Boolean(document.querySelector('.sidebar'))
+        },
+        {
+          name: 'Kein horizontaler Hauptseiten-Overflow',
+          run: () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
+        },
+        {
+          name: 'Theme Setting ist speicherbar',
+          run: () => {
+            const current = appState.ui.theme;
+            localStorage.setItem('ridelab.qa.test', current);
+            const result = localStorage.getItem('ridelab.qa.test') === current;
+            localStorage.removeItem('ridelab.qa.test');
+            return result;
+          }
+        },
+        {
+          name: 'Fahrerprofil-Komponente vorhanden',
+          run: () => Boolean(document.getElementById('profileRing'))
+        },
+        {
+          name: 'Onboarding vorhanden',
+          run: () => Boolean(document.getElementById('onboardingOverlay'))
+        },
+        {
+          name: 'Profil-Vollständigkeit liefert 0–100',
+          run: () => {
+            const value = calculateProfileCompleteness(appState.user);
+            return Number.isFinite(value) && value >= 0 && value <= 100;
+          }
+        },
+        {
+          name: 'Profil Storage ist verfügbar',
+          run: () => {
+            localStorage.setItem('ridelab.qa.profile', JSON.stringify({ ok: true }));
+            const result = JSON.parse(localStorage.getItem('ridelab.qa.profile')).ok === true;
+            localStorage.removeItem('ridelab.qa.profile');
+            return result;
+          }
+        },
+        {
+          name: 'Onboarding Progress-Komponente vollständig',
+          run: () => Boolean(
+            document.getElementById('onboardingProgressFill') &&
+            document.getElementById('onboardingProgressPercent')
+          )
+        },
+        {
+          name: 'Onboarding Footer-Aktionen vorhanden',
+          run: () => Boolean(
+            document.getElementById('onboardingBackButton') &&
+            document.getElementById('onboardingSkipButton') &&
+            document.getElementById('onboardingNextButton') &&
+            document.getElementById('onboardingCloseButton')
+          )
+        },
+        {
+          name: 'Onboarding besitzt 9 native Schritte',
+          run: () => document.querySelectorAll('.onboarding-step').length === 9
+        },
+        {
+          name: 'Mehrfachauswahl Trainingsarten vorhanden',
+          run: () => document.querySelectorAll('input[name="bikeTypes"][type="checkbox"]').length >= 3
+        },
+        {
+          name: 'Mehrfachauswahl Trainingsziele vorhanden',
+          run: () => document.querySelectorAll('input[name="goals"][type="checkbox"]').length >= 5
+        }
+      ];
+    }
+
+    function runQATests() {
+      const results = getQATests().map(test => {
+        let passed = false;
+
+        try {
+          passed = Boolean(test.run());
+        } catch (error) {
+          passed = false;
+          if (RIDELAB_DEBUG_MODE) console.error(error);
+        }
+
+        return { name: test.name, passed };
+      });
+
+      renderQAResults(results);
+      return results;
+    }
+
+    function renderQAResults(results) {
+      const table = document.getElementById('qaTable');
+      const summaryChip = document.getElementById('qaSummaryChip');
+
+      if (!table || !summaryChip) return;
+
+      table.innerHTML = results.map(result => `
+        <div class="qa-row">
+          <span>${result.name}</span>
+          <span class="qa-result ${result.passed ? 'pass' : 'fail'}">
+            ${result.passed ? 'PASS' : 'FAIL'}
+          </span>
+        </div>
+      `).join('');
+
+      const passedCount = results.filter(result => result.passed).length;
+      const allPassed = passedCount === results.length;
+
+      summaryChip.textContent = `${passedCount} / ${results.length} PASS`;
+      summaryChip.className = `status-chip ${allPassed ? 'good' : ''}`;
+    }
+
+    /* =========================================================
+       05 — EVENT BINDINGS
+    ========================================================= */
+
+    document.querySelectorAll('[data-view-target]').forEach(button => {
+      button.addEventListener('click', () => openView(button.dataset.viewTarget));
+    });
+
+    document.querySelectorAll('[data-theme-choice]').forEach(button => {
+      button.addEventListener('click', () => applyTheme(button.dataset.themeChoice));
+    });
+
+    document.getElementById('runTestsButton').addEventListener('click', runQATests);
+
+    document.getElementById('profileShortcutButton').addEventListener('click', () => openView('profile'));
+    document.getElementById('editProfileButton').addEventListener('click', () => openOnboarding({ edit: true }));
+
+    document.getElementById('onboardingNextButton').addEventListener('click', advanceOnboarding);
+
+    document.getElementById('onboardingBackButton').addEventListener('click', () => {
+      appState.ui.onboardingStep = Math.max(0, appState.ui.onboardingStep - 1);
+      updateOnboardingUI();
+    });
+
+    document.getElementById('onboardingSkipButton').addEventListener('click', () => {
+      closeOnboarding();
+      renderAthleteProfile();
+    });
+
+    document.getElementById('onboardingCloseButton').addEventListener('click', () => {
+      closeOnboarding();
+      renderAthleteProfile();
+    });
+
+    document.getElementById('onboardingForm').addEventListener('input', () => {
+      const profile = collectProfileFromForm();
+      updateOnboardingSummary(profile);
+    });
+
+    document.getElementById('onboardingForm').addEventListener('change', event => {
+      if (event.target && event.target.name === 'goals') {
+        buildPrimaryGoalChoices();
+      }
+
+      const profile = collectProfileFromForm();
+      updateOnboardingSummary(profile);
+    });
+
+    /* =========================================================
+       06 — STARTUP
+       Reihenfolge:
+       1. Theme ist bereits im <head> gesetzt.
+       2. UI-State aktualisieren.
+       3. Navigation initialisieren.
+       4. QA ausführen.
+    ========================================================= */
+
+    function startRideLab() {
+      appState.ui.theme = document.documentElement.getAttribute('data-theme') || 'dark';
+      updateThemeButtons();
+      updateSystemThemeValue();
+
+      loadAthleteProfile();
+      renderAthleteProfile();
+      openView('home');
+
+      requestAnimationFrame(() => {
+        runQATests();
+
+        const onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+        if (!onboardingCompleted) {
+          openOnboarding();
+        }
+      });
+
+      if (RIDELAB_DEBUG_MODE) {
+        console.log('[RideLab] Started', {
+          version: RIDELAB_VERSION,
+          databaseVersion: RIDELAB_DATABASE_VERSION,
+          release: RIDELAB_RELEASE_STATUS,
+          state: appState
+        });
+      }
+    }
+
+    startRideLab();
+  </script>
+</body>
+</html>
